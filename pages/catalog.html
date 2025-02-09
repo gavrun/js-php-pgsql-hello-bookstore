@@ -1,0 +1,146 @@
+<h3>Каталог</h3>
+
+<div id="catalog" class="panel-group" aria-multiselectable="true">
+    <div class="panel panel-default">
+        <div class="panel-body table table-condensed">
+            <span class="col-sm-6"><strong>Название</strong></span>
+            <span class="col-sm-2 text-right"><strong>Наличие</strong></span>
+            <span class="col-sm-4"><strong>Заказ</strong></span>
+        </div>
+    </div>
+</div>
+
+<script>
+    //functions
+    var populateCatalog = () => {
+        lib.server(
+            'getBooks',
+            {},
+            data => {
+                let list = $('#catalog');
+                $(list).children('div:gt(0)').remove();
+                data.rows.forEach(
+                    r => {
+                        let row = $('<div/>', { class: 'panel panel-default' });
+                        let bookInfo =
+                            $('<tr/>')
+                                .append(
+                                    $('<td/>',
+                                        {
+                                            role: 'button',
+                                            'data-toggle': 'collapse',
+                                            'data-parent': '#catalog',
+                                            href: '#operations' + r.book_id,
+                                            'aria-expanded': 'false',
+                                            'aria-controls': 'operations' + r.book_id,
+                                            class: 'col-sm-6 collapsed',
+                                            'data-id': r.book_id
+                                        }
+                                    )
+                                        .html(r.display_name)
+                                )
+                            ;
+                        if (r.onhand_qty !== undefined) {
+                            bookInfo
+                                .append($('<td/>', { class: 'text-right col-sm-2' }).html(r.onhand_qty))
+                                .append(
+                                    $('<td/>', { class: 'col-sm-4' })
+                                        .append(
+                                            $('<form/>', { class: 'form-inline order', action: 'orderBook', method: 'post' })
+                                                .append($('<input/>', { name: 'qty', type: 'number', min: '1', step: '1', placeholder: 'К-во', class: 'form-control txt-right' }))
+                                                .append($('<input/>', { name: 'id', type: 'hidden', value: r.book_id }))
+                                                .append($('<button/>', { type: 'submit', class: 'btn btn-success' }).html('Заказать').prop('disabled', true))
+                                        )
+                                )
+                                ;
+                        }
+                        else {
+                            bookInfo.append($('<td/>', { class: 'col-sm-5' }));
+                        }
+                        row
+                            .append(
+                                $('<div/>', { id: 'heading' + r.book_id, class: 'panel-heading table-responsive', role: 'tab' })
+                                    .append(
+                                        $('<table/>', { class: 'table' }).append(bookInfo)
+                                    )
+                            )
+                            .append(
+                                $(
+                                    '<div/>',
+                                    { id: 'operations' + r.book_id, class: 'panel-body panel-collapse collapse table-responsive text-left', role: 'tabpanel', 'aria-labelledby': 'heading' + r.book_id }
+                                )
+                            )
+                            ;
+                        row.appendTo(list);
+                    }
+                );
+            }
+        );
+    };
+    var populateOperations = (e) => {
+        let button = $(e.target);
+        let opsPanel = $(button.attr('href'));
+        opsPanel.empty();
+        if (button.attr('aria-expanded') == 'false') {
+            lib.clearPanes();
+            lib.server(
+                'getOperations',
+                { book_id: button.data('id') },
+                data => {
+                    if (data.rows.length === 0) {
+                        opsPanel.append('Операций нет');
+                    }
+                    else {
+                        let opsTable = $('<table/>', { class: 'table-hover col-md-6' }).append($('<tbody/>'));
+                        opsTable.append(
+                            $('<tr/>')
+                                .append($('<th/>', { class: 'col-md-5' }).text('Тип операции'))
+                                .append($('<th/>', { class: 'text-right col-md-3' }).text('Кол-во'))
+                                .append($('<th/>', { class: 'col-md-4' }).text('Дата'))
+                        );
+                        data.rows.forEach(
+                            r => {
+                                opsTable.append(
+                                    $('<tr/>')
+                                        .append($('<td/>', { class: 'col-md-5' }).html(r.op_type))
+                                        .append($('<td/>', { class: 'text-right col-md-3' }).html(r.qty_change))
+                                        .append($('<td/>', { class: 'col-md-4' }).html(r.date_created))
+                                );
+                            }
+                        )
+                        opsPanel.append(opsTable);
+                    }
+                }
+            );
+        }
+    }
+    var isIntegerString = s => {
+        let integer = Number.parseInt(s);
+        return integer.toString() !== s || integer <= 0;
+    }
+    var chkSubmit = event => {
+        let disabled = isIntegerString($(event.currentTarget).val());
+        $(event.currentTarget).siblings('button').prop('disabled', disabled);
+    }
+    //forms
+    lib.ajaxForm(
+        '.order',
+        () => {
+            lib.alert('Книги заказаны');
+            populateCatalog();
+        }
+    );
+    //events
+    $('#catalog').on(
+        'input change',
+        'input[name="qty"]',
+        chkSubmit
+    );
+    $('#catalog').on(
+        'click',
+        'td[data-toggle="collapse"]',
+        populateOperations
+    );
+    //init
+    populateCatalog();
+</script>

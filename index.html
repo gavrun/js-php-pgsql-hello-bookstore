@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+
+    <link rel="stylesheet" href="lib/bootstrap-5.3.3-dist/css/bootstrap.min.css" />
+    <link rel='stylesheet' type='text/css' media='screen' href='main.css'>
+
+    <script src="lib/jquery-3.7.1.min.js"></script>
+    <script src="lib/bootstrap-5.3.3-dist/js/bootstrap.min.js"></script>
+    <!-- <script src="lib/bootstrap-5.3.3-dist/js/bootstrap.bundle.min.js"></script> -->
+    <script src='main.js'></script>
+
+    <title>Книжный магазин</title>
+</head>
+
+<body>
+
+    <div class="container">
+        <h2>Книжный магазин</h2>
+        <div id="main" class="row">
+            <div class="col-md-8">
+                <div class="btn-toolbar" role="toolbar">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-info" data-page="shop">Магазин</button>
+                    </div>
+                    <div class="btn-group pull-right" role="group">
+                        <button type="button" class="btn btn-info" data-page="catalog">Каталог</button>
+                    </div>
+                    <div class="btn-group pull-right" role="group">
+                        <button type="button" class="btn btn-info" data-page="authors">Авторы</button>
+                        <button type="button" class="btn btn-info" data-page="books">Книги</button>
+                    </div>
+                </div>
+                <div id="page"></div>
+                <div id="alert"></div>
+            </div>
+            <div class="col-md-4">
+                <div id="db2" class="row">
+                    <div class="col-md-9 col-sm-10">
+                        <label for="role" class="control-label">Роль БД</label> <select id="role"
+                            class="form-control"></select>
+                    </div>
+                    <div class="col-md-3 col-sm-2">
+                        <div id="loader" class="pull-right"></div>
+                    </div>
+                </div>
+                <div id="action"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(
+            () => {
+                //select role
+                $('#role').change((e) => {
+                    lib.server(
+                        'setRole',
+                        { 'role': $(e.target).val() },
+                        () => {
+                            let currentButton = $('.btn[data-page].btn-primary');
+                            if (currentButton.length) {
+                                lib.displayPage(currentButton.data('page'));
+                            }
+                        }
+                    );
+                });
+                //display page
+                $('.btn[data-page]').click(
+                    e => {
+                        $('.btn[data-page]').not(e.target).removeClass('btn-primary').addClass('btn-info');
+                        $(e.target).removeClass('btn-info').addClass('btn-primary');
+                        lib.displayPage($(e.target).data('page'));
+                    }
+                );
+                //fill in roles
+                lib.server(
+                    'getRoles',
+                    {},
+                    data => {
+                        let select = $('#role');
+                        data.forEach(r => {
+                            $('<option/>').val(r).html(r).prop('selected', r == 'postgres').appendTo(select);
+                        });
+                        $('#role').trigger('change');
+                    }
+                );
+            }
+        );
+    </script>
+
+</body>
+
+</html>

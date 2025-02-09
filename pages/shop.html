@@ -1,0 +1,58 @@
+<h3>Магазин</h3>
+
+<form id="search" class="form-inline panel" action="findBooks">
+    <div class="form-group clearfix">
+        <input id="author_name" class="form-control" name="author_name" placeholder="Имя автора" />
+    </div>
+    <div class="form-group clearfix">
+        <input id="book_title" class="form-control" name="book_title" placeholder="Название книги" />
+    </div>
+    <div class="form-group checkbox clearfix">
+        <input id="in_stock" type="checkbox" value="y" class="form-control" name="in_stock" />
+        <label for="in_stock" class="control-label">Есть на складе</label>
+    </div>
+    <button type="submit" class="btn btn-primary">Поиск</button>
+</form>
+
+<div id="books" class="list-group">
+    <div id="headers" style="display:none;" class="list-group-item clearfix">
+        <span class="col-md-8"><strong>Название</strong></span>
+        <span class="col-md-2 text-right"><strong>Наличие</strong></span>
+        <span class="col-md-2"></span>
+    </div>
+</div>
+
+<script>
+    {
+        //display books
+        let findBooks = data => {
+            lib.alert(data.rows.length == 0 ? 'Книги не найдены' : 'Найдено книг: ' + data.rows.length);
+            $('#headers').toggle(data.rows.length > 0);
+            let list = $('#books');
+            list.children('form').remove();
+            data.rows.forEach(
+                r => {
+                    $('<form/>', { class: 'form buy list-group-item clearfix', action: 'buyBook', method: 'post' })
+                        .append($('<span/>', { class: 'col-md-8' }).html(r.display_name))
+                        .append($('<span/>', { class: 'col-md-2 text-right' }).html(r.onhand_qty))
+                        .append(
+                            $('<span/>', { class: 'col-md-2 text-nowrap' })
+                                .append($('<input/>', { type: 'hidden', name: 'book_id', value: r.book_id }))
+                                .append($('<button/>', { type: 'submit', class: 'btn btn-success pull-right' }).html('Купить'))
+                        )
+                        .appendTo(list)
+                        ;
+                }
+            );
+        }
+
+        lib.ajaxForm('#search', findBooks);
+        lib.ajaxForm(
+            '.buy',
+            data => {
+                lib.alert('Вы купили книгу', 'success');
+                lib.server('findBooks', $('#search').serialize(), findBooks);
+            }
+        );
+    }
+</script>
